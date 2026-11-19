@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test tests/*.test.js",
     "predev": "npm test",
-    "dev": "node --watch ./src/server.js"
+    "dev": "node --watch ./src/server.js",
+    "pretest": "node --input-type=module -e \"import { globSync } from 'node:fs'; if (globSync('tests/*.test.js').length === 0) { console.error('Aucun test trouvé.'); process.exit(1); }\""
   },
   "repository": {
     "type": "git",
