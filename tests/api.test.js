@@ -4,6 +4,9 @@ import request from "supertest";
 import { app } from "../src/app.js";
 import express from "express";
 import { errorHandler } from "../src/middlewares/errors.js";
+import { requireAuth } from "../src/middlewares/auth.js";
+import { HttpError } from "../src/HttpError.js";
+
 
 test("GET /api/tickets : accès non authentifié refusé", async () => {
   const res = await request(app).get("/api/tickets");
@@ -69,4 +72,42 @@ test("Une erreur interne ne divulgue aucun détail sensible", async () => {
     res.text,
     /Information interne confidentielle/
   );
+});
+
+test("Une page protégée redirige vers la connexion", async () => {
+  const testApp = express();
+
+  testApp.get("/private", requireAuth, (req, res) => {
+    res.send("Page privée");
+  });
+
+  const res = await request(testApp).get("/private");
+
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.location, "/login");
+});
+
+test("HttpError conserve son statut et son message", () => {
+  const error = new HttpError(403, "Accès réservé");
+
+  assert.ok(error instanceof Error);
+  assert.equal(error.status, 403);
+  assert.equal(error.message, "Accès réservé");
+});
+
+test("Une interdiction renvoie un JSON avec HTTP 403", async () => {
+  const testApp = express();
+
+  testApp.get("/api/interdit", () => {
+    throw new HttpError(403, "Accès réservé");
+  });
+
+  testApp.use(errorHandler);
+
+  const res = await request(testApp).get("/api/interdit");
+
+  assert.equal(res.status, 403);
+  assert.deepEqual(res.body, {
+    error: "Accès réservé",
+  });
 });

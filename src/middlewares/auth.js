@@ -1,3 +1,4 @@
+import { HttpError } from "../HttpError.js";
 import { verifyToken } from "../services/auth.service.js";
 
 export function loadUser(req, res, next) {
@@ -17,9 +18,11 @@ export function loadUser(req, res, next) {
 }
 
 export function requireAuth(req, res, next) {
-  if (!req.user) {
-    return res.status(401).json({ error: "Connexion requise" });
+  if (req.user) return next();
+
+  if (req.originalUrl.startsWith("/api")) {
+    throw new HttpError(401, "Connexion requise");
   }
 
-  next();
+  res.redirect("/login");
 }
